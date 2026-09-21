@@ -1,10 +1,12 @@
-require("dotenv").config();
+const path = require("node:path");
+require("dotenv").config({ path: path.join(__dirname, ".env"), quiet: true });
 require("node:dns").setServers(["8.8.8.8", "8.8.4.4"]);
 
 const express = require("express");
 const mongoose = require("mongoose");
 const User = require("./models/user.cjs");
 const authRoutes = require("./routes/authRoutes.cjs");
+const { getJwtSecret } = require("./config/jwt.cjs");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,6 +31,9 @@ app.get("/", (req, res) => {
 
 async function startServer() {
   try {
+    // Fail before connecting or listening when JWT configuration is invalid.
+    getJwtSecret();
+
     if (!process.env.MONGODB_URI) {
       throw new Error("MONGODB_URI is missing from .env");
     }

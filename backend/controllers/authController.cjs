@@ -1,5 +1,7 @@
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const User = require("../models/user.cjs");
+const { getJwtSecret } = require("../config/jwt.cjs");
 
 async function register(req, res) {
   const { name, email, password } = req.body || {};
@@ -86,4 +88,60 @@ async function register(req, res) {
   }
 }
 
-module.exports = { register };
+async function login(req, res) {
+  const { email, password } = req.body || {};
+
+  if (typeof email !== "string" || typeof password !== "string") {
+    return res.status(400).json({
+      message: "Email and password must be provided as text.",
+    });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailPattern.test(cleanEmail)) {
+    return res.status(400).json({ message: "Enter a valid email address." });
+  }
+
+  if (password.length < 8 || Buffer.byteLength(password, "utf8") > 72) {
+    return res.status(400).json({
+      message: "Password must have at least 8 characters and at most 72 bytes.",
+    });
+  }
+
+  try {
+    // passwordHash is excluded by default in the User schema.
+    const user = await User.findOne({ email: cleanEmail }).select("+passwordHash");
+    const passwordMatches = user && await bcrypt.compare(password, user.passwordHash);
+
+    if (!passwordMatches) {
+      return res.status(401).json({ message: "Invalid email or password." });
+    }
+
+    // sub identifies the user; expiresIn adds the expiration claim.
+    const token = jwt.sign({ sub: user._id.toString() }, getJwtSecret(), {
+      algorithm: "HS256",
+      expiresIn: "1h",
+    });
+
+    res.set("Cache-Control", "no-store");
+    return res.status(200).json({
+      message: "Logged in successfully.",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
+    });
+  } catch (error) {
+    console.error("Login failed:", error.name);
+    return res.status(500).json({
+      message: "Unable to log in. Please try again.",
+    });
+  }
+}
+
+module.exports = { register, login };
