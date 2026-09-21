@@ -68,8 +68,9 @@ async function main() {
       server.stderr.on("data", () => {});
     });
 
-    const registration = await post("register", { name: "Login Test", email, password });
+    const registration = await post("register", { name: "Login Test", email, password, isAdmin: true });
     check(registration.status === 201, "Test customer registration must succeed");
+    check(registration.data.user.isAdmin === false, "Public registration must ignore administrator requests");
     console.log("PASS: registration still creates a customer");
 
     const valid = await post("login", { email: ` ${email.toUpperCase()} `, password });
@@ -90,6 +91,38 @@ async function main() {
     check(wrongKeyRejected, "Wrong signing key must fail verification");
     console.log("PASS: valid login, normalized email, safe user fields, signed JWT, and one-hour expiry");
     console.log("PASS: JWT verification rejects expired tokens and wrong signing keys");
+
+    // Exercise the real protected route without printing Authorization headers.
+    async function getMe(token) {
+      const response = await fetch(`http://127.0.0.1:${port}/api/auth/me`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        signal: AbortSignal.timeout(15000),
+      });
+      const text = await response.text();
+      check(!text.includes(password) && !text.includes(secret), "/me must not expose credentials");
+      check(!token || !text.includes(token), "/me must not echo a token");
+      check(!/"password(?:Hash)?"\s*:|\$2[aby]\$/.test(text), "/me must not expose password fields or hashes");
+      return { status: response.status, data: JSON.parse(text) };
+    }
+
+    const me = await getMe(valid.data.token);
+    check(me.status === 200, "Valid token must return 200 from /me");
+    check(JSON.stringify(me.data.user) === JSON.stringify(registration.data.user), "/me must return only the current safe user fields");
+    console.log("PASS: /me returns 200 with safe database user details");
+
+    for (const [label, token] of [
+      ["missing", undefined],
+      ["invalid", randomBytes(24).toString("hex")],
+      ["expired", jwt.sign({ sub: claims.sub }, secret, { algorithm: "HS256", expiresIn: -1 })],
+      ["wrong signature", jwt.sign({ sub: claims.sub }, randomBytes(32), { algorithm: "HS256", expiresIn: "1h" })],
+      ["wrong algorithm", jwt.sign({ sub: claims.sub }, secret, { algorithm: "HS384", expiresIn: "1h" })],
+      ["nonexistent user", jwt.sign({ sub: randomBytes(12).toString("hex") }, secret, { algorithm: "HS256", expiresIn: "1h" })],
+    ]) {
+      const result = await getMe(token);
+      check(result.status === 401, `${label} token must return 401 from /me`);
+      check(result.data.message === "Authentication required.", "/me credential errors must be generic");
+      console.log(`PASS: /me rejects ${label} token with 401`);
+    }
 
     const incorrect = await post("login", { email, password: randomBytes(24).toString("hex") });
     const unknown = await post("login", { email: `unknown-${randomUUID()}@example.com`, password });
