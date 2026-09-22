@@ -2,32 +2,12 @@ const path = require("node:path");
 require("dotenv").config({ path: path.join(__dirname, ".env"), quiet: true });
 require("node:dns").setServers(["8.8.8.8", "8.8.4.4"]);
 
-const express = require("express");
+const app = require("./app.cjs");
 const mongoose = require("mongoose");
 const User = require("./models/user.cjs");
-const authRoutes = require("./routes/authRoutes.cjs");
 const { getJwtSecret } = require("./config/jwt.cjs");
 
-const app = express();
 const PORT = process.env.PORT || 5000;
-
-app.use(express.json());
-// Return safe JSON instead of parser errors that can contain request data.
-app.use((error, req, res, next) => {
-  if (error.type === "entity.parse.failed") {
-    return res.status(400).json({ message: "Request body must be valid JSON." });
-  }
-  if (error.type === "entity.too.large") {
-    return res.status(413).json({ message: "Request body is too large." });
-  }
-  next(error);
-});
-
-app.use("/api/auth", authRoutes);
-
-app.get("/", (req, res) => {
-  res.json({ message: "Backend is running!" });
-});
 
 async function startServer() {
   try {

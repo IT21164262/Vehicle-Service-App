@@ -112,7 +112,7 @@ async function login(req, res) {
 
   try {
     // passwordHash is excluded by default in the User schema.
-    const user = await User.findOne({ email: cleanEmail }).select("+passwordHash");
+    const user = await User.findOne({ email: cleanEmail }).select("+passwordHash +tokenVersion");
     const passwordMatches = user && await bcrypt.compare(password, user.passwordHash);
 
     if (!passwordMatches) {
@@ -120,7 +120,7 @@ async function login(req, res) {
     }
 
     // sub identifies the user; expiresIn adds the expiration claim.
-    const token = jwt.sign({ sub: user._id.toString() }, getJwtSecret(), {
+    const token = jwt.sign({ sub: user._id.toString(), ver: user.tokenVersion || 0 }, getJwtSecret(), {
       algorithm: "HS256",
       expiresIn: "1h",
     });
