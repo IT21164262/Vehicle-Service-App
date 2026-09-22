@@ -110,14 +110,39 @@ export async function authenticatedRequest<T>(path: string, method = 'GET', body
   try { return await request<T>(path, body, token, method, true); }
   catch (error) {
     if (error instanceof ApiError && error.status === 401 && authToken === token) await logout();
-    if (error instanceof ApiError && error.status === 403 && authToken === token) {
-      // Refresh the role after a denied administrator action; backend remains authoritative.
-      await getCurrentUser().catch(() => undefined);
-    }
+    if (error instanceof ApiError && error.status === 403 && authToken === token) await getCurrentUser().catch(() => undefined);
     throw error;
   }
 }
 
+export function authenticatedUpload<T>(path: string, file: { uri: string; name: string; type: string; file?: Blob }, onProgress?: (value: number) => void): Promise<T> {
+  return new Promise(async (resolve, reject) => {
+    const token = await getAuthToken();
+    if (!token) return reject(new ApiError('Please log in again.', 401));
+    const xhr = new XMLHttpRequest();
+    const form = new FormData();
+    if (file.file) form.append('image', file.file, file.name);
+    else form.append('image', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
+    xhr.open('POST', `${getApiBaseUrl().replace(/\/auth$/, '')}${path}`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.upload.onprogress = event => {
+      if (event.lengthComputable) onProgress?.(event.loaded / event.total);
+    };
+    xhr.onerror = () => reject(new Error('Unable to reach the service. Check your connection and API configuration.'));
+    xhr.ontimeout = () => reject(new Error('The upload took too long to complete. Please try again.'));
+    xhr.timeout = REQUEST_TIMEOUT_MS;
+    xhr.onload = () => {
+      let data: unknown;
+      try { data = JSON.parse(xhr.responseText); } catch { data = null; }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new ApiError(typeof data === 'object' && data && 'message' in data && typeof data.message === 'string' ? data.message : 'The upload failed. Please try again.', xhr.status));
+        return;
+      }
+      resolve(data as T);
+    };
+    xhr.send(form);
+  });
+}
 export async function getCurrentUser() {
   const token = await getAuthToken();
   if (!token) throw new Error('You are not logged in.');

@@ -69,4 +69,4 @@ Inspect each response: none should contain a password, `passwordHash`, or bcrypt
 
 Live HTTP checks passed for missing fields, wrong types, blank names, invalid emails, password length limits, malformed JSON, oversized JSON, normalized registration, forced customer role, duplicate emails, concurrent duplicate requests, and safe response fields. The local verification script is not included in this milestone. Two disposable `registration-check-*` accounts remain from verification.
 
-Login/JWT, services, image uploads, appointments, and administrator workflows remain for later milestones.
+Login/JWT, services, image uploads, appointments, and administrator workflows are delivered in separate milestones.

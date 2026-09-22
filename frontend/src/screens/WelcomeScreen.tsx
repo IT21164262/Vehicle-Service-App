@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, ImageBackground, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
 
@@ -13,18 +13,56 @@ type WelcomeScreenProps = {
 
 export function WelcomeScreen({ onLogin, onSignUp }: WelcomeScreenProps) {
   const [aboutVisible, setAboutVisible] = useState(false);
+  const { height } = useWindowDimensions();
+  const pageHeight = Math.max(560, height - 32);
+  const [sliderWidth, setSliderWidth] = useState(0);
+  const sliderPosition = useRef(new Animated.Value(0)).current;
+  const sliderStart = useRef(0);
+  const thumbSize = 52;
+  const maxSlide = Math.max(0, sliderWidth - thumbSize - 10);
+  const maxSlideRef = useRef(0);
+  maxSlideRef.current = maxSlide;
+  const resetSlider = () => Animated.spring(sliderPosition, { toValue: 0, useNativeDriver: true, bounciness: 8 }).start();
+  const sliderResponder = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponderCapture: () => true,
+    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 3,
+    onMoveShouldSetPanResponderCapture: (_, gesture) => Math.abs(gesture.dx) > 3,
+    onPanResponderGrant: () => {
+      sliderPosition.stopAnimation(value => { sliderStart.current = value; });
+    },
+    onPanResponderMove: (_, gesture) => {
+      const limit = maxSlideRef.current;
+      const next = Math.min(limit, Math.max(0, sliderStart.current + gesture.dx));
+      sliderPosition.setValue(next);
+    },
+    onPanResponderRelease: (_, gesture) => {
+      const limit = maxSlideRef.current;
+      const finalPosition = Math.min(limit, Math.max(0, sliderStart.current + gesture.dx));
+      if (limit > 0 && finalPosition >= limit * 0.82) {
+        Animated.timing(sliderPosition, { toValue: limit, duration: 140, useNativeDriver: true }).start(() => {
+          onSignUp();
+          resetSlider();
+        });
+      } else {
+        resetSlider();
+      }
+    },
+    onPanResponderTerminate: resetSlider,
+  })).current;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.page}>
-          <View style={styles.imagePlaceholder} accessible accessibilityLabel="AutoNexa vehicle image placeholder">
-            <View style={styles.placeholderCar}>
-              <Ionicons name="car-sport-outline" size={150} color={colors.onNavy} />
-            </View>
-            <View style={styles.placeholderCurve} />
-          </View>
-
+        <ImageBackground
+          source={require('../../assets/autonexa-welcome-background.png')}
+          resizeMode="cover"
+          style={[styles.page, { height: pageHeight }]}
+          imageStyle={{ borderRadius: 38 }}
+          accessible
+          accessibilityLabel="Green sports car for AutoNexa"
+        >
+          <View style={styles.overlay} />
           <View style={styles.content}>
             <View style={styles.brandRow}>
               <View style={styles.brandMark}>
@@ -40,32 +78,28 @@ export function WelcomeScreen({ onLogin, onSignUp }: WelcomeScreenProps) {
               Book trusted car services and repairs{'\n'}anytime, anywhere.
             </Text>
 
-            <View style={styles.dots} accessible={false}>
-              <View style={styles.dotActive} />
-              <View style={styles.dot} />
-              <View style={styles.dot} />
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Log in to AutoNexa"
+              onPress={onLogin}
+              style={({ pressed }) => [styles.loginButton, pressed && styles.buttonPressed]}
+            >
+              <Text style={styles.loginText}>Login</Text>
+            </Pressable>
 
-            <View style={styles.actions}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Log in to AutoNexa"
-                onPress={onLogin}
-                style={({ pressed }) => [styles.loginButton, pressed && styles.buttonPressed]}
+            <View
+              style={styles.slider}
+              onLayout={event => setSliderWidth(event.nativeEvent.layout.width)}
+              accessibilityRole="adjustable"
+              accessibilityLabel="Slide to get started"
+            >
+              <Text style={styles.sliderHint}>Slide to get started</Text>
+              <Animated.View
+                {...sliderResponder.panHandlers}
+                style={[styles.sliderThumb, { transform: [{ translateX: sliderPosition }] }]}
               >
-                <Text style={styles.loginText}>Login</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Get started with AutoNexa"
-                onPress={onSignUp}
-                style={({ pressed }) => [styles.startButton, pressed && styles.startButtonPressed]}
-              >
-                <Text style={styles.startText}>Get Started</Text>
-                <View style={styles.arrowCircle}>
-                  <Ionicons name="arrow-forward" size={18} color={colors.surface} />
-                </View>
-              </Pressable>
+                <Ionicons name="arrow-forward" size={21} color={colors.surface} />
+              </Animated.View>
             </View>
 
             <Pressable
@@ -77,7 +111,7 @@ export function WelcomeScreen({ onLogin, onSignUp }: WelcomeScreenProps) {
               <Text style={styles.aboutText}>About AutoNexa</Text>
             </Pressable>
           </View>
-        </View>
+        </ImageBackground>
       </ScrollView>
 
       <Modal visible={aboutVisible} transparent animationType="fade" onRequestClose={() => setAboutVisible(false)}>
@@ -102,28 +136,22 @@ export function WelcomeScreen({ onLogin, onSignUp }: WelcomeScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#6D751D' },
+  safeArea: { flex: 1, backgroundColor: '#063E2C' },
   scrollContent: { flexGrow: 1, justifyContent: 'center' },
-  page: { width: '100%', maxWidth: 600, alignSelf: 'center', minHeight: 720, margin: spacing.md, overflow: 'hidden', borderRadius: 38, borderWidth: 1, borderColor: '#FF8A3D', backgroundColor: colors.blue },
-  imagePlaceholder: { height: 390, backgroundColor: colors.navy, position: 'relative', overflow: 'hidden' },
-  placeholderCar: { flex: 1, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-18deg' }] },
-  placeholderCurve: { position: 'absolute', width: '150%', height: 180, bottom: -115, left: '-25%', borderRadius: 200, backgroundColor: colors.blue },
-  content: { flex: 1, minHeight: 330, padding: spacing.lg, paddingTop: spacing.md, backgroundColor: colors.blue },
+  page: { width: '100%', maxWidth: 600, alignSelf: 'center', margin: spacing.md, overflow: 'hidden', borderRadius: 38, borderWidth: 1, borderColor: '#FF8A3D', justifyContent: 'flex-end' },
+  overlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0, 35, 25, 0.02)' },
+  content: { padding: spacing.lg, paddingTop: 110, backgroundColor: 'rgba(0, 0, 0, 0.08)' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg },
   brandMark: { backgroundColor: colors.navy, padding: 7, borderRadius: 12 },
   brandName: { color: colors.surface, fontSize: 18, fontWeight: '700' },
   title: { color: colors.surface, fontSize: 32, lineHeight: 40, fontWeight: '800', letterSpacing: -0.7 },
   description: { color: colors.surface, fontSize: 14, lineHeight: 20, marginTop: spacing.md },
-  dots: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: spacing.lg },
-  dotActive: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.surface },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFB181' },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg },
-  loginButton: { minHeight: 52, paddingHorizontal: spacing.md, borderRadius: 28, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.surface },
+  loginButton: { alignSelf: 'flex-start', minHeight: 50, marginTop: spacing.lg, paddingHorizontal: spacing.lg, borderRadius: 26, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.surface },
   loginText: { color: colors.surface, fontSize: 14, fontWeight: '600' },
-  startButton: { flex: 1, minHeight: 58, paddingLeft: spacing.lg, paddingRight: 6, borderRadius: 30, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  slider: { minHeight: 62, marginTop: spacing.md, padding: 5, borderRadius: 32, backgroundColor: 'rgba(255, 255, 255, 0.96)', justifyContent: 'center', overflow: 'hidden' },
+  sliderHint: { color: colors.text, fontSize: 14, fontWeight: '700', textAlign: 'center' },
+  sliderThumb: { position: 'absolute', left: 5, top: 5, width: 52, height: 52, borderRadius: 26, backgroundColor: colors.blue, alignItems: 'center', justifyContent: 'center' },
   startButtonPressed: { opacity: 0.8 },
-  startText: { color: colors.text, fontSize: 14, fontWeight: '700' },
-  arrowCircle: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.blue, alignItems: 'center', justifyContent: 'center' },
   buttonPressed: { opacity: 0.75 },
   aboutButton: { alignSelf: 'flex-start', marginTop: spacing.md, paddingVertical: spacing.sm },
   aboutText: { color: '#FFE9D9', fontSize: 13, fontWeight: '600' },

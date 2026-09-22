@@ -1,4 +1,4 @@
-import { authenticatedRequest } from './authApi';
+import { authenticatedRequest, authenticatedUpload } from './authApi';
 
 export type Service = {
   id: string; name: string; description: string; price: number;
@@ -24,4 +24,7 @@ export async function updateService(id: string, input: ServiceInput) {
 }
 export function deleteService(id: string) {
   return authenticatedRequest<void>(`/services/${encodeURIComponent(id)}`, 'DELETE');
+}
+export function uploadServiceImage(id: string, file: { uri: string; name: string; type: string; file?: Blob }, onProgress?: (value: number) => void) {
+  return authenticatedUpload<{ service: Service }>(`/services/${encodeURIComponent(id)}/image`, file, onProgress).then(result => result.service);
 }

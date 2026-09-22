@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('node:path');
 const app = express();
 
 app.use((req, res, next) => {
@@ -9,6 +10,11 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.json());
+app.use('/uploads/services', express.static(path.join(__dirname, 'uploads', 'services'), {
+  fallthrough: false,
+  index: false,
+  redirect: false,
+}));
 app.use((error, req, res, next) => {
   if (error.type === 'entity.parse.failed') return res.status(400).json({ message: 'Request body must be valid JSON.' });
   if (error.type === 'entity.too.large') return res.status(413).json({ message: 'Request body is too large.' });
