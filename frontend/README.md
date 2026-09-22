@@ -1,6 +1,6 @@
 # AutoNexa frontend
 
-Expo SDK 57, React Native and TypeScript. Includes the welcome, signup, and login screens. Password recovery reuses the login form; no separate recovery page, dashboard, or new landing page has been added.
+Expo SDK 57, React Native and TypeScript. Includes the welcome, signup, and login screens. Password recovery is outside the project scope. Signed-in password changes remain available in Profile.
 
 ## Configure and run
 
@@ -15,7 +15,7 @@ Changing the public API URL requires restarting Expo. The Android emulator uses 
 
 Native login tokens persist in Expo SecureStore; browser tokens persist in localStorage. Startup validates the saved session. Expired or revoked tokens are removed; network failures preserve the session for retry. Token lifetime remains one hour. Authentication navigation to a dashboard remains a future milestone.
 
-Forgot password uses an emailed, single-use code and requires backend SMTP configuration. See [authentication setup](../AUTH_SETUP.md) for environment variables, endpoint contracts, security behavior, and test limitations.
+No email-provider configuration is required. See [authentication setup](../AUTH_SETUP.md).
 
 ## Checks without a build
 
@@ -24,8 +24,8 @@ Forgot password uses an emailed, single-use code and requires backend SMTP confi
 ## Source map
 
 - `App.tsx`: existing screen switching and session restoration.
-- `src/services/authApi.ts`: API configuration, requests, session storage, and recovery.
-- `src/screens/LoginScreen.tsx`: login and password recovery in the same form.
+- `src/services/authApi.ts`: API configuration, requests, session storage.
+- `src/screens/LoginScreen.tsx`: login form.
 - `src/screens/SignUpScreen.tsx`: registration.
 - `src/screens/WelcomeScreen.tsx`: existing welcome page.
 - `src/theme.ts`: shared design values.

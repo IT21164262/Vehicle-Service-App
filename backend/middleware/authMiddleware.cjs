@@ -31,7 +31,7 @@ async function authenticate(req, res, next) {
     }
 
     // Fetch the current role on every request; never trust a role from the JWT.
-    const user = await User.findById(claims.sub).select("name email isAdmin +tokenVersion");
+    const user = await User.findById(claims.sub).select("name email isAdmin profileImageUrl notifications +tokenVersion");
     if (!user || (claims.ver ?? 0) !== (user.tokenVersion || 0)) {
       return res.status(401).json({ message: "Authentication required." });
     }

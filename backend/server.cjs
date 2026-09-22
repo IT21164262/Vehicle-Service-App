@@ -1,6 +1,5 @@
 const path = require("node:path");
 require("dotenv").config({ path: path.join(__dirname, ".env"), quiet: true });
-require("node:dns").setServers(["8.8.8.8", "8.8.4.4"]);
 
 const app = require("./app.cjs");
 const mongoose = require("mongoose");
@@ -11,6 +10,11 @@ const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
+    // Optional workaround for local networks that cannot resolve Atlas SRV records.
+    // Render must continue using its platform DNS, even if local settings are copied.
+    if (process.env.RENDER !== 'true' && process.env.DNS_SERVERS?.trim()) {
+      require('node:dns').setServers(process.env.DNS_SERVERS.split(',').map(value => value.trim()).filter(Boolean));
+    }
     // Fail before connecting or listening when JWT configuration is invalid.
     getJwtSecret();
 

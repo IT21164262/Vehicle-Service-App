@@ -27,9 +27,10 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow AutoNexa administrators to choose service images."
+          "photosPermission": "Allow AutoNexa to choose profile and service images."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }

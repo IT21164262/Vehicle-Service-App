@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Animated, ImageBackground, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Animated, Image, ImageBackground, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
 
@@ -14,7 +14,7 @@ type WelcomeScreenProps = {
 export function WelcomeScreen({ onLogin, onSignUp }: WelcomeScreenProps) {
   const [aboutVisible, setAboutVisible] = useState(false);
   const { height } = useWindowDimensions();
-  const pageHeight = Math.max(560, height - 32);
+  const pageHeight = Math.max(560, height);
   const [sliderWidth, setSliderWidth] = useState(0);
   const sliderPosition = useRef(new Animated.Value(0)).current;
   const sliderStart = useRef(0);
@@ -58,7 +58,7 @@ export function WelcomeScreen({ onLogin, onSignUp }: WelcomeScreenProps) {
           source={require('../../assets/autonexa-welcome-background.png')}
           resizeMode="cover"
           style={[styles.page, { height: pageHeight }]}
-          imageStyle={{ borderRadius: 38 }}
+          imageStyle={{ borderRadius: 0 }}
           accessible
           accessibilityLabel="Green sports car for AutoNexa"
         >
@@ -66,7 +66,7 @@ export function WelcomeScreen({ onLogin, onSignUp }: WelcomeScreenProps) {
           <View style={styles.content}>
             <View style={styles.brandRow}>
               <View style={styles.brandMark}>
-                <Ionicons name="car-sport-outline" size={22} color={colors.surface} />
+                <Image source={require('../../assets/autonexa-vehicle-logo.png')} style={styles.brandLogo} accessibilityLabel="AutoNexa vehicle logo" />
               </View>
               <Text style={styles.brandName}>AutoNexa</Text>
             </View>
@@ -138,11 +138,11 @@ export function WelcomeScreen({ onLogin, onSignUp }: WelcomeScreenProps) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#063E2C' },
   scrollContent: { flexGrow: 1, justifyContent: 'center' },
-  page: { width: '100%', maxWidth: 600, alignSelf: 'center', margin: spacing.md, overflow: 'hidden', borderRadius: 38, borderWidth: 1, borderColor: '#FF8A3D', justifyContent: 'flex-end' },
+  page: { width: '100%', alignSelf: 'center', overflow: 'hidden', borderRadius: 0, borderWidth: 0, justifyContent: 'flex-end' },
   overlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0, 35, 25, 0.02)' },
   content: { padding: spacing.lg, paddingTop: 110, backgroundColor: 'rgba(0, 0, 0, 0.08)' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg },
-  brandMark: { backgroundColor: colors.navy, padding: 7, borderRadius: 12 },
+  brandMark: { width: 58, height: 42, overflow: 'hidden' }, brandLogo: { width: '100%', height: '100%' },
   brandName: { color: colors.surface, fontSize: 18, fontWeight: '700' },
   title: { color: colors.surface, fontSize: 32, lineHeight: 40, fontWeight: '800', letterSpacing: -0.7 },
   description: { color: colors.surface, fontSize: 14, lineHeight: 20, marginTop: spacing.md },

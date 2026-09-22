@@ -16,13 +16,13 @@ export function Action({ title, icon, onPress, secondary = false, danger = false
   </Pressable>;
 }
 
-export function ServiceImage({ uri, name, large = false }: { uri: string; name: string; large?: boolean }) {
+export function ServiceImage({ uri, name, large = false, height }: { uri: string; name: string; large?: boolean; height?: number }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [uri]);
-  return <View style={[ui.image, large && { height: 220 }]}>
+  return <View style={[ui.image, large && { height: 220 }, height !== undefined && { height }]}>
     {uri && !failed ? <Image source={{ uri }} accessibilityLabel={name} resizeMode="cover" style={StyleSheet.absoluteFill} onError={() => setFailed(true)} /> : <View style={ui.placeholder}>
-      <Ionicons name="car-sport-outline" size={large ? 64 : 40} color={serviceColors.green} />
-      <Text style={ui.placeholderText}>{uri ? 'Image unavailable' : 'No image yet'}</Text>
+      <Ionicons name="car-sport-outline" size={height && height < 80 ? 24 : large ? 64 : 40} color={serviceColors.green} />
+      <Text style={[ui.placeholderText, height !== undefined && height < 80 && { fontSize: 9 }]}>{uri ? 'Image unavailable' : 'No image yet'}</Text>
     </View>}
   </View>;
 }
@@ -36,11 +36,11 @@ export function Feedback({ title, message, busy = false, onRetry }: { title: str
   </View>;
 }
 
-export function PageHeader({ title, onBack, onLogout, disabled = false }: { title: string; onBack: () => void; onLogout: () => void; disabled?: boolean }) {
+export function PageHeader({ title, onBack, disabled = false }: { title: string; onBack: () => void; disabled?: boolean }) {
   return <View style={ui.pageHeader}>
     <Pressable accessibilityRole="button" accessibilityLabel="Back to services" disabled={disabled} onPress={onBack} style={ui.headerButton}><Ionicons name="arrow-back" size={22} color="white" /><Text style={ui.headerButtonText}>Back</Text></Pressable>
+    <Image source={require('../../assets/autonexa-vehicle-logo.png')} style={ui.headerLogo} accessibilityLabel="AutoNexa vehicle logo" />
     <Text accessibilityRole="header" style={ui.pageTitle}>{title}</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel="Log out" disabled={disabled} onPress={onLogout} style={ui.headerButton}><Ionicons name="log-out-outline" size={22} color="white" /><Text style={ui.headerButtonText}>Log out</Text></Pressable>
   </View>;
 }
 
@@ -61,6 +61,7 @@ export const ui = StyleSheet.create({
   feedback: { padding: 26, alignItems: 'center', gap: 16 },
   pageHeader: { backgroundColor: serviceColors.green, paddingHorizontal: 16, paddingVertical: 12, gap: 8, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   pageTitle: { color: 'white', fontSize: 19, fontWeight: '600', flex: 1, minWidth: 100 },
+  headerLogo: { width: 58, height: 30, borderRadius: 8 },
   headerButton: { minHeight: 48, paddingHorizontal: 4, gap: 6, flexDirection: 'row', alignItems: 'center' },
   headerButtonText: { color: 'white', fontSize: 14, flexShrink: 1 },
 });

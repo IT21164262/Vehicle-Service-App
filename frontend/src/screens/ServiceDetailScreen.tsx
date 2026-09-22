@@ -4,9 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getService, Service } from '../services/serviceApi';
 import { Action, Feedback, formatPrice, PageHeader, ServiceImage, serviceColors as c, ui } from '../components/ServiceUI';
 
-type Props = { id: string; administrator: boolean; onBack: () => void; onEdit: (id: string) => void; onLogout: () => void };
+type Props = { id: string; administrator: boolean; onBack: () => void; onEdit: (id: string) => void; onLogout: () => void; onBook: (id: string) => void };
 
-export function ServiceDetailScreen({ id, administrator, onBack, onEdit, onLogout }: Props) {
+export function ServiceDetailScreen({ id, administrator, onBack, onEdit, onLogout, onBook }: Props) {
   const [service, setService] = useState<Service | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -19,12 +19,12 @@ export function ServiceDetailScreen({ id, administrator, onBack, onEdit, onLogou
   useEffect(() => { void load(); }, [id]);
 
   return <SafeAreaView style={ui.safe} edges={['top', 'bottom', 'left', 'right']}>
-    <View style={ui.screen}><PageHeader title="Service details" onBack={onBack} onLogout={onLogout} />
+    <View style={ui.screen}><PageHeader title="Service details" onBack={onBack} />
       {loading ? <Feedback title="Loading service" busy /> : error ? <Feedback title="Couldn’t load service" message={error} onRetry={load} /> : service ? <ScrollView contentContainerStyle={ui.content}>
         <ServiceImage uri={service.imageUrl} name={service.name} large />
         <View style={styles.headingRow}><Text style={ui.heading}>{service.name}</Text><Text style={styles.price}>{formatPrice(service.price)}</Text></View>
         <Text style={ui.body}>{service.description}</Text>
-        <View style={styles.capacity}><Text style={styles.capacityLabel}>Daily appointment capacity</Text><Text style={styles.capacityValue}>{service.maxAppointmentsPerDay}</Text></View>
+        {!administrator && <Action title="Book this service" icon="calendar-outline" onPress={() => onBook(service.id)} />}
         {administrator && <Action title="Edit service" icon="create-outline" onPress={() => onEdit(service.id)} />}
       </ScrollView> : <Feedback title="Service not found" />}
     </View>
@@ -34,7 +34,4 @@ export function ServiceDetailScreen({ id, administrator, onBack, onEdit, onLogou
 const styles = StyleSheet.create({
   headingRow: { gap: 8 },
   price: { color: c.orange, fontSize: 22, fontWeight: '800' },
-  capacity: { backgroundColor: c.pale, borderRadius: 18, padding: 16, gap: 5 },
-  capacityLabel: { color: c.muted, fontSize: 13 },
-  capacityValue: { color: c.dark, fontSize: 22, fontWeight: '700' },
 });

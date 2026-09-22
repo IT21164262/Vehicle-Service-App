@@ -1,6 +1,8 @@
 const express = require('express');
 const path = require('node:path');
 const app = express();
+// Render terminates HTTPS at its reverse proxy. Keep local defaults unchanged.
+if (process.env.RENDER === 'true') app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_ORIGIN || '*');
@@ -15,13 +17,16 @@ app.use('/uploads/services', express.static(path.join(__dirname, 'uploads', 'ser
   index: false,
   redirect: false,
 }));
+app.use('/uploads/profiles', express.static(path.join(__dirname, 'uploads', 'profiles'), { fallthrough: false, index: false, redirect: false }));
 app.use((error, req, res, next) => {
   if (error.type === 'entity.parse.failed') return res.status(400).json({ message: 'Request body must be valid JSON.' });
   if (error.type === 'entity.too.large') return res.status(413).json({ message: 'Request body is too large.' });
   next(error);
 });
 app.use('/api/auth', require('./routes/authRoutes.cjs'));
+app.use('/api/auth/notifications', require('./routes/notificationRoutes.cjs'));
 app.use('/api/services', require('./routes/serviceRoutes.cjs'));
+app.use('/api/appointments', require('./routes/appointmentRoutes.cjs'));
 app.get('/', (req, res) => res.json({ message: 'Backend is running!' }));
 app.use((req, res) => res.status(404).json({ message: 'Endpoint not found.' }));
 app.use((error, req, res, next) => {

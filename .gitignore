@@ -3,3 +3,15 @@ node_modules/
 *.env
 .env.*
 !.env.example
+
+# Runtime uploads; keep frontend/assets and other source assets tracked.
+/backend/uploads/
+
+# Project backup and private migration locations (see docs/FREE_HOSTING.md).
+/backups/
+/private-migration/
+/docs/migration-manifest.private.json
+/docs/local-image-inventory.json
+
+# Existing local Atlas credential file; never publish it.
+/atlas-credentials.env

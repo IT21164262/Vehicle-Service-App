@@ -14,7 +14,7 @@ export function getApiBaseUrl() {
   return `${configured}/auth`;
 }
 
-export type AuthUser = { id: string; name: string; email: string; isAdmin: boolean };
+export type AuthUser = { id: string; name: string; email: string; isAdmin: boolean; profileImageUrl?: string };
 type AuthResponse = { message: string; token?: string; user: AuthUser };
 const REQUEST_TIMEOUT_MS = 15000;
 // Scope sessions to the backend so changing environments never forwards an old token.
@@ -107,41 +107,54 @@ export async function authenticatedRequest<T>(path: string, method = 'GET', body
     notifySession(null);
     throw new ApiError('Please log in again.', 401);
   }
-  try { return await request<T>(path, body, token, method, true); }
+  try {
+    const result = await request<T>(path, body, token, method, true);
+    if (authToken !== token) throw new ApiError('Session changed. Please try again.', 401);
+    return result;
+  }
   catch (error) {
-    if (error instanceof ApiError && error.status === 401 && authToken === token) await logout();
+    if (error instanceof ApiError && error.status === 401 && authToken === token) {
+      // This endpoint also uses 401 for an incorrect current password.
+      if (path === '/auth/password') await getCurrentUser().catch(() => undefined);
+      else await logout();
+    }
     if (error instanceof ApiError && error.status === 403 && authToken === token) await getCurrentUser().catch(() => undefined);
     throw error;
   }
 }
 
-export function authenticatedUpload<T>(path: string, file: { uri: string; name: string; type: string; file?: Blob }, onProgress?: (value: number) => void): Promise<T> {
-  return new Promise(async (resolve, reject) => {
-    const token = await getAuthToken();
-    if (!token) return reject(new ApiError('Please log in again.', 401));
-    const xhr = new XMLHttpRequest();
-    const form = new FormData();
-    if (file.file) form.append('image', file.file, file.name);
-    else form.append('image', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
-    xhr.open('POST', `${getApiBaseUrl().replace(/\/auth$/, '')}${path}`);
-    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    xhr.upload.onprogress = event => {
-      if (event.lengthComputable) onProgress?.(event.loaded / event.total);
-    };
-    xhr.onerror = () => reject(new Error('Unable to reach the service. Check your connection and API configuration.'));
-    xhr.ontimeout = () => reject(new Error('The upload took too long to complete. Please try again.'));
-    xhr.timeout = REQUEST_TIMEOUT_MS;
-    xhr.onload = () => {
-      let data: unknown;
-      try { data = JSON.parse(xhr.responseText); } catch { data = null; }
-      if (xhr.status < 200 || xhr.status >= 300) {
-        reject(new ApiError(typeof data === 'object' && data && 'message' in data && typeof data.message === 'string' ? data.message : 'The upload failed. Please try again.', xhr.status));
-        return;
-      }
-      resolve(data as T);
-    };
-    xhr.send(form);
-  });
+export async function authenticatedUpload<T>(path: string, file: { uri: string; name: string; type: string; file?: Blob }, onProgress?: (value: number) => void): Promise<T> {
+  const token = await getAuthToken();
+  if (!token) { notifySession(null); throw new ApiError('Please log in again.', 401); }
+  try {
+    return await new Promise<T>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const form = new FormData();
+      if (file.file) form.append('image', file.file, file.name);
+      else form.append('image', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
+      xhr.open('POST', getApiBaseUrl().replace(/\/auth$/, '') + path);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+      xhr.upload.onprogress = event => { if (event.lengthComputable) onProgress?.(event.loaded / event.total); };
+      xhr.onerror = () => reject(new Error('Unable to upload. Check your connection and try again.'));
+      xhr.ontimeout = () => reject(new Error('The upload took too long. Please try again.'));
+      xhr.onabort = () => reject(new Error('Upload cancelled.'));
+      xhr.timeout = 60000;
+      xhr.onload = () => {
+        if (authToken !== token) { reject(new ApiError('Session changed. Please try again.', 401)); return; }
+        let data: unknown;
+        try { data = JSON.parse(xhr.responseText); } catch { data = null; }
+        if (xhr.status < 200 || xhr.status >= 300) {
+          reject(new ApiError(typeof data === 'object' && data && 'message' in data && typeof data.message === 'string' ? data.message : 'The upload failed. Please try again.', xhr.status));
+        } else if (!data || typeof data !== 'object') reject(new Error('The upload returned an invalid response.'));
+        else resolve(data as T);
+      };
+      xhr.send(form);
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401 && authToken === token) await logout();
+    if (error instanceof ApiError && error.status === 403 && authToken === token) await getCurrentUser().catch(() => undefined);
+    throw error;
+  }
 }
 export async function getCurrentUser() {
   const token = await getAuthToken();
@@ -185,14 +198,4 @@ export async function logout() {
   authToken = null;
   try { await saveToken(null); }
   finally { notifySession(null); }
-}
-
-export function forgotPassword(email: string) {
-  return request<{ message: string }>('/forgot-password', { email });
-}
-
-export async function resetPassword(token: string, password: string) {
-  const result = await request<{ message: string }>('/reset-password', { token: token.trim(), password });
-  await logout();
-  return result;
 }
