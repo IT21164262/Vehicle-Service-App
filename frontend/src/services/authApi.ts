@@ -83,7 +83,7 @@ async function request<T>(path: string, body?: Record<string, unknown>, token?: 
     return data as T;
   } catch (error) {
     if (controller.signal.aborted) throw new Error('The service took too long to respond. Please try again.');
-    if (error instanceof TypeError) throw new Error('Unable to reach the service. Check your connection and API configuration.');
+    if (error instanceof TypeError) throw new Error('Unable to connect. Check your internet connection and try again.');
     throw error;
   } finally { clearTimeout(timeout); }
 }

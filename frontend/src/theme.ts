@@ -1,4 +1,3 @@
-// Shared design values for this screen and the future authentication screens.
 export const theme = {
   colors: {
     navy: '#00543F', blue: '#FF6500', bluePressed: '#D95000',

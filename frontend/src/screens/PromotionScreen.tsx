@@ -14,7 +14,7 @@ export function PromotionScreen({ onBack, onLogout, onAddService }: Props) {
   const [selected, setSelected] = useState<Service | null>(null);
   const [success, setSuccess] = useState('');
   if (selected) return <PromotionForm key={selected.id} service={selected} onLogout={onLogout} onBack={() => setSelected(null)} onSaved={() => {
-    setSelected(null); setSuccess('Promotion saved. Enabled promotions appear on the customer home screen.'); void services.refresh();
+    setSelected(null); setSuccess('Promotion saved.'); void services.refresh();
   }} />;
   return <SafeAreaView style={ui.safe}><View style={ui.screen}>
     <PageHeader title="Customer promotions" onBack={onBack} />
@@ -80,7 +80,7 @@ function PromotionForm({ service, onBack, onLogout, onSaved }: { service: Servic
         <Text style={styles.label}>Display order</Text><TextInput accessibilityLabel="Display order" value={order} onChangeText={setOrder} editable={!busy} keyboardType="number-pad" style={styles.input} /><Text style={ui.body}>Lower numbers appear first.</Text>
         <Text style={styles.label}>Customer banner preview</Text><PromotionBanner imageUrl={image?.uri || imageUrl} text={text} name={service.name} />
         <Action title={image || imageUrl ? 'Replace promotion image' : 'Choose promotion image'} icon="images-outline" secondary disabled={busy} onPress={choose} />
-        {image && <><Text style={ui.body}>Selected image will upload when you save the promotion.</Text><Action title="Cancel selected image" secondary disabled={busy} onPress={() => setImage(null)} /></>}
+        {image && <><Text style={ui.body}>Save to upload this image.</Text><Action title="Cancel selected image" secondary disabled={busy} onPress={() => setImage(null)} /></>}
       </View>
       {!!error && <Text accessibilityRole="alert" style={ui.error}>{error}</Text>}
       {saving && <Text accessibilityLiveRegion="polite" style={ui.body}>{stage}{stage === 'Uploading banner' ? `: ${Math.round(progress * 100)}%` : '...'}</Text>}

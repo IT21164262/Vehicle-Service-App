@@ -66,7 +66,7 @@ async function create(req, res) {
 
 async function list(req, res) {
   try {
-    const filter = {};
+    const filter = { isDeleted: { $ne: true } };
     if (typeof req.query.search === 'string' && req.query.search.trim()) filter.name = { $regex: req.query.search.trim().slice(0, 80), $options: 'i' };
     if (req.query.promoted === 'true') filter.isPromoted = true;
     const sortField = req.query.sort || 'name';
@@ -87,7 +87,7 @@ async function list(req, res) {
 
 async function promoted(req, res) {
   try {
-    const services = await Service.find({ isPromoted: true }).sort({ promoOrder: 1, name: 1, _id: 1 });
+    const services = await Service.find({ isPromoted: true, isDeleted: { $ne: true } }).sort({ promoOrder: 1, name: 1, _id: 1 });
     return res.json({ services: services.map(serialize) });
   } catch (error) { return failure(res, error); }
 }
@@ -98,9 +98,10 @@ async function popular(req, res) {
       { $match: { status: { $in: ['Confirmed', 'Completed'] } } },
       { $group: { _id: '$serviceId', bookingCount: { $sum: 1 } } },
       { $sort: { bookingCount: -1, _id: 1 } },
-      { $limit: 20 },
       { $lookup: { from: 'services', localField: '_id', foreignField: '_id', as: 'service' } },
       { $unwind: '$service' },
+      { $match: { 'service.isDeleted': { $ne: true } } },
+      { $limit: 20 },
     ]);
     return res.json({ services: rows.map(row => ({ ...serialize(row.service), bookingCount: row.bookingCount })) });
   } catch (error) { return failure(res, error); }
@@ -116,6 +117,7 @@ async function recent(req, res) {
       { $sort: { appointmentDate: -1, _id: 1 } },
       { $lookup: { from: 'services', localField: '_id', foreignField: '_id', as: 'service' } },
       { $unwind: '$service' },
+      { $match: { 'service.isDeleted': { $ne: true } } },
     ]);
     return res.json({ services: rows.map(row => ({ ...serialize(row.service), appointmentDate: row.appointmentDate.toISOString() })) });
   } catch (error) { return failure(res, error); }
@@ -124,7 +126,7 @@ async function recent(req, res) {
 async function get(req, res) {
   try {
     const service = await Service.findById(req.params.id);
-    if (!service) return res.status(404).json({ message: 'Service not found.' });
+    if (!service || service.isDeleted) return res.status(404).json({ message: 'Service not found.' });
     return res.json({ service: serialize(service) });
   } catch (error) { return failure(res, error); }
 }
@@ -134,8 +136,8 @@ async function update(req, res) {
   if (result.error) return res.status(400).json({ message: result.error });
   try {
     const previous = await Service.findById(req.params.id);
-    if (!previous) return res.status(404).json({ message: 'Service not found.' });
-    const match = { _id: req.params.id };
+    if (!previous || previous.isDeleted) return res.status(404).json({ message: 'Service not found.' });
+    const match = { _id: req.params.id, isDeleted: { $ne: true } };
     for (const prefix of ['image', 'promoImage']) {
       const field = `${prefix}Url`;
       if (Object.hasOwn(result.data, field)) {
@@ -157,9 +159,14 @@ async function update(req, res) {
 async function remove(req, res) {
   try {
     const service = await Service.findById(req.params.id);
-    if (!service) return res.status(404).json({ message: 'Service not found.' });
+    if (!service || service.isDeleted) return res.status(404).json({ message: 'Service not found.' });
+    if (await Appointment.exists({ serviceId: service._id, status: { $in: ['Pending', 'Confirmed'] } })) {
+      return res.status(409).json({ message: 'Cannot delete a service with Pending or Confirmed appointments. Complete or cancel those bookings first.' });
+    }
     if (await Appointment.exists({ serviceId: service._id })) {
-      return res.status(409).json({ message: 'Cannot delete a service referenced by appointments.' });
+      // Retain the service record and its images for appointment history.
+      await Service.updateOne({ _id: service._id }, { $set: { isDeleted: true, isPromoted: false } });
+      return res.status(204).end();
     }
     await Service.deleteOne({ _id: service._id });
     await cloudImages.remove(service.imagePublicId);
@@ -174,7 +181,7 @@ async function upload(req, res, urlField, prefix, category) {
     const service = await replaceImage(Service, req.params.id, urlField, prefix, category, req.file.buffer);
     return res.json({ service: serialize(service) });
   } catch (error) {
-    return res.status(error instanceof ImageError ? error.status : 503).json({ message: error instanceof ImageError ? error.message : 'Unable to save image. Check image storage configuration or try again.' });
+    return res.status(error instanceof ImageError ? error.status : 503).json({ message: error instanceof ImageError ? error.message : 'Unable to save image. Please try again.' });
   }
 }
 function uploadImage(req, res) { return upload(req, res, 'imageUrl', 'image', 'services'); }

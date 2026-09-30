@@ -14,12 +14,10 @@ async function authenticate(req, res, next) {
   }
 
   try {
-    // Verification checks the signature and expiration; decoding alone does not.
     const claims = jwt.verify(bearer[1], getJwtSecret(), {
       algorithms: ["HS256"],
     });
 
-    // Require the identity and expiration claims issued by our login endpoint.
     if (
       !claims ||
       typeof claims !== "object" ||
@@ -55,7 +53,6 @@ async function authenticate(req, res, next) {
 }
 
 function requireAdmin(req, res, next) {
-  // Defensive check: routes must place authenticate before requireAdmin.
   if (!req.user) {
     return res.status(401).json({ message: "Authentication required." });
   }

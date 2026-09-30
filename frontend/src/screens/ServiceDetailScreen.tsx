@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getService, Service } from '../services/serviceApi';
 import { Action, Feedback, formatPrice, PageHeader, ServiceImage, serviceColors as c, ui } from '../components/ServiceUI';

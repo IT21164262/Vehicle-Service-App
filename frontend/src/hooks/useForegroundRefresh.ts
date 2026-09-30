@@ -1,8 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { AppState, Platform } from 'react-native';
 
-// Screens mount on navigation in this app. Also refresh when returning from
-// another app/browser tab; no background polling or sockets are introduced.
 export function useForegroundRefresh(refresh: () => void) {
   const latest = useRef(refresh);
   latest.current = refresh;

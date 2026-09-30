@@ -9,6 +9,7 @@ function validImageUrl(value) {
 }
 
 const serviceSchema = new mongoose.Schema({
+  isDeleted: { type: Boolean, default: false },
   name: { type: String, required: true, trim: true, maxlength: 120 },
   description: { type: String, required: true, trim: true, maxlength: 2000 },
   price: { type: Number, required: true, min: 0, validate: Number.isFinite },

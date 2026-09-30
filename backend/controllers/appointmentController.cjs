@@ -71,7 +71,7 @@ async function create(req, res) {
   if (result.error) return res.status(400).json({ message: result.error });
   if (result.data.userId !== req.user._id.toString()) return res.status(403).json({ message: 'You can only create your own appointments.' });
   try {
-    const [user, service] = await Promise.all([User.findById(req.user._id).select('_id name'), Service.findById(result.data.serviceId).select('_id name')]);
+    const [user, service] = await Promise.all([User.findById(req.user._id).select('_id name'), Service.findOne({ _id: result.data.serviceId, isDeleted: { $ne: true } }).select('_id name')]);
     if (!user) return res.status(401).json({ message: 'Authentication required.' });
     if (!service) return res.status(404).json({ message: 'Service not found.' });
     const appointment = await Appointment.create(result.data);
@@ -124,7 +124,7 @@ async function update(req, res) {
     if (appointment.status !== 'Pending') return res.status(409).json({ message: 'Only Pending appointments can be edited.' });
     if (Object.hasOwn(result.data, 'userId') && result.data.userId !== req.user._id.toString()) return res.status(403).json({ message: 'You cannot change appointment ownership.' });
     if (result.data.serviceId) {
-      const service = await Service.exists({ _id: result.data.serviceId });
+      const service = await Service.exists({ _id: result.data.serviceId, isDeleted: { $ne: true } });
       if (!service) return res.status(404).json({ message: 'Service not found.' });
     }
     Object.assign(appointment, result.data);
@@ -136,9 +136,11 @@ async function remove(req, res) {
   try {
     const appointment = await Appointment.findById(req.params.id);
     if (!appointment) return res.status(404).json({ message: 'Appointment not found.' });
-    if (appointment.userId.toString() !== req.user._id.toString()) return res.status(403).json({ message: 'You cannot delete this appointment.' });
+    const ownsAppointment = appointment.userId.toString() === req.user._id.toString();
+    if (!ownsAppointment) return res.status(403).json({ message: 'You cannot delete this appointment.' });
     if (appointment.status !== 'Pending') return res.status(409).json({ message: 'Only Pending appointments can be deleted.' });
-    await Appointment.deleteOne({ _id: appointment._id });
+    const result = await Appointment.deleteOne({ _id: appointment._id, status: 'Pending' });
+    if (!result.deletedCount) return res.status(409).json({ message: 'The appointment changed. Refresh and try again.' });
     return res.status(204).end();
   } catch (error) { return safeFailure(res, error); }
 }

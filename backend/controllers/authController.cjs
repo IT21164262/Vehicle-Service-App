@@ -8,7 +8,6 @@ const { replaceImage, ImageError } = require("../services/replaceImage.cjs");
 async function register(req, res) {
   const { name, email, password } = req.body || {};
 
-  // Check types before using string methods.
   if (
     typeof name !== "string" ||
     typeof email !== "string" ||
@@ -28,7 +27,6 @@ async function register(req, res) {
     });
   }
 
-  // A basic format check; this does not verify email ownership.
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   if (!emailPattern.test(cleanEmail)) {
@@ -122,7 +120,6 @@ async function login(req, res) {
       return res.status(401).json({ message: "Invalid email or password." });
     }
 
-    // sub identifies the user; expiresIn adds the expiration claim.
     const token = jwt.sign({ sub: user._id.toString(), ver: user.tokenVersion || 0 }, getJwtSecret(), {
       algorithm: "HS256",
       expiresIn: "1h",
@@ -209,7 +206,7 @@ async function uploadProfileImage(req, res) {
     const user = await replaceImage(User, req.user._id, 'profileImageUrl', 'profileImage', 'profiles', req.file.buffer);
     return res.json({ user: safeUser(user) });
   } catch (error) {
-    return res.status(error instanceof ImageError ? error.status : 503).json({ message: error instanceof ImageError ? error.message : 'Unable to save profile image. Check image storage configuration or try again.' });
+    return res.status(error instanceof ImageError ? error.status : 503).json({ message: error instanceof ImageError ? error.message : 'Unable to save profile image. Please try again.' });
   }
 }
 

@@ -1,31 +1,25 @@
 # AutoNexa frontend
 
-Expo SDK 57, React Native and TypeScript. Includes the welcome, signup, and login screens. Password recovery is outside the project scope. Signed-in password changes remain available in Profile.
+Expo and React Native app for vehicle services, appointments, profiles, notifications, and administrator tools.
 
-## Configure and run
+## Run
 
-1. Run `npm.cmd ci` inside this folder (Node.js 24).
-2. Copy `.env.example` to `.env` and choose the API URL for your device. The URL must end in `/api`; do not append `/auth`.
-3. Start the backend with `npm.cmd --prefix ../backend start` in another terminal.
-4. Run `npm.cmd run android` with a running Android emulator, or `npm.cmd run web` for a browser. For a physical phone, run `npm.cmd start` and use compatible Expo Go on the same network.
+1. Install dependencies with `npm.cmd ci` in this folder.
+2. Set `EXPO_PUBLIC_API_URL` in your local environment to the backend URL ending in `/api`.
+3. Run `npm.cmd start` and open the app in a compatible Expo Go client, or run `npm.cmd run web`.
 
-Changing the public API URL requires restarting Expo. The Android emulator uses `10.0.2.2` for the host computer; a physical phone needs the computer's LAN IPv4 address. Production URLs must use HTTPS.
+The hosted Render backend can be used directly. A local backend is optional. Restart Expo after changing the API URL. Production connections require HTTPS.
 
-## Authentication
+## Checks
 
-Native login tokens persist in Expo SecureStore; browser tokens persist in localStorage. Startup validates the saved session. Expired or revoked tokens are removed; network failures preserve the session for retry. Token lifetime remains one hour. Authentication navigation to a dashboard remains a future milestone.
+From the project root:
 
-No email-provider configuration is required. See [authentication setup](../AUTH_SETUP.md).
+`npm.cmd --prefix frontend run typecheck`
 
-## Checks without a build
+`node --test tests/appointment-delete.cjs`
 
-`npm.cmd test` runs API/session unit tests with mocked network and platform storage. `npm.cmd run typecheck` checks TypeScript. Neither command builds or exports the app. Native rendering and actual device storage still need device testing.
+The deletion test uses simulated database records and does not contact Render. Verify native screens on a device after deployment.
 
-## Source map
+## Sessions
 
-- `App.tsx`: existing screen switching and session restoration.
-- `src/services/authApi.ts`: API configuration, requests, session storage.
-- `src/screens/LoginScreen.tsx`: login form.
-- `src/screens/SignUpScreen.tsx`: registration.
-- `src/screens/WelcomeScreen.tsx`: existing welcome page.
-- `src/theme.ts`: shared design values.
+Login tokens are stored in SecureStore on native devices and localStorage on the web. Startup validates saved sessions. Expired or revoked sessions require login; network failures allow retry. Signed-in users can change their password in Profile.

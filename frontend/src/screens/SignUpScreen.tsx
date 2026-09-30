@@ -56,7 +56,7 @@ export function SignUpScreen({ onBack, onSwitchToLogin }: SignUpScreenProps) {
               <Ionicons name="create-outline" size={40} color={colors.blue} />
             </View>
             <Text style={styles.title}>Create your account</Text>
-            <Text style={styles.subtitle}>Set up your profile and begin booking trusted AutoNexa service faster.</Text>
+            <Text style={styles.subtitle}>Sign up to book vehicle services.</Text>
           </View>
 
           <View style={styles.formCard}>

@@ -15,7 +15,6 @@ async function startServer() {
     if (process.env.RENDER !== 'true' && process.env.DNS_SERVERS?.trim()) {
       require('node:dns').setServers(process.env.DNS_SERVERS.split(',').map(value => value.trim()).filter(Boolean));
     }
-    // Fail before connecting or listening when JWT configuration is invalid.
     getJwtSecret();
 
     if (!process.env.MONGODB_URI) {

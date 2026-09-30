@@ -50,7 +50,7 @@ export function LoginScreen({ onBack, onSwitchToSignUp, onAuthenticated }: Login
               <Ionicons name="person-circle-outline" size={40} color={colors.blue} />
             </View>
             <Text style={styles.title}>Welcome back</Text>
-            <Text style={styles.subtitle}>Log in to manage your service appointments and driving care.</Text>
+            <Text style={styles.subtitle}>Log in to manage your appointments.</Text>
           </View>
 
           <View style={styles.formCard}>

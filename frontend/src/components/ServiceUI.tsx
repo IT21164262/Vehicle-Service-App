@@ -38,7 +38,7 @@ export function Feedback({ title, message, busy = false, onRetry }: { title: str
 
 export function PageHeader({ title, onBack, disabled = false }: { title: string; onBack: () => void; disabled?: boolean }) {
   return <View style={ui.pageHeader}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Back to services" disabled={disabled} onPress={onBack} style={ui.headerButton}><Ionicons name="arrow-back" size={22} color="white" /><Text style={ui.headerButtonText}>Back</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Back" disabled={disabled} onPress={onBack} style={ui.headerButton}><Ionicons name="arrow-back" size={22} color="white" /><Text style={ui.headerButtonText}>Back</Text></Pressable>
     <Image source={require('../../assets/autonexa-vehicle-logo.png')} style={ui.headerLogo} accessibilityLabel="AutoNexa vehicle logo" />
     <Text accessibilityRole="header" style={ui.pageTitle}>{title}</Text>
   </View>;

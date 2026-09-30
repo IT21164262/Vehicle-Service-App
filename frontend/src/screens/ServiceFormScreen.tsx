@@ -44,7 +44,7 @@ export function ServiceFormScreen({ id, onBack, onSaved, onLogout }: Props) {
     if (!form.description.trim()) return setError('Enter a service description.');
     if (form.description.trim().length > 2000) return setError('Keep the service description within 2,000 characters.');
     if (!form.price.trim() || !Number.isFinite(price) || price < 0) return setError('Enter a non-negative price in LKR.');
-    if (!validUrl(form.imageUrl) || form.imageUrl.length > 2048) return setError('Enter valid HTTP/HTTPS image URLs without embedded credentials, or leave them empty.');
+    if (!validUrl(form.imageUrl) || form.imageUrl.length > 2048) return setError('Enter a valid image URL or leave it empty.');
     const input: Pick<ServiceInput, keyof FormState> = { name: form.name.trim(), description: form.description.trim(), price, imageUrl: form.imageUrl.trim() };
     setSaving(true); setStage('Saving service');
     let persisted = false;
@@ -57,13 +57,13 @@ export function ServiceFormScreen({ id, onBack, onSaved, onLogout }: Props) {
         setSelectedImage(null); setForm(current => ({ ...current, imageUrl: saved.imageUrl }));
       }
       onSaved();
-    } catch (failure) { setError(`${persisted ? 'Service details were saved. ' : ''}${failure instanceof Error ? failure.message : 'Unable to save service.'}${persisted ? ' Retry to finish; a duplicate service will not be created.' : ''}`); }
+    } catch (failure) { setError(`${persisted ? 'Service details were saved. ' : ''}${failure instanceof Error ? failure.message : 'Unable to save service.'}${persisted ? ' Retry to upload the image.' : ''}`); }
     finally { setSaving(false); setStage(''); }
   }
   const field = (key: keyof FormState, label: string, options: { numeric?: boolean; multiline?: boolean; url?: boolean; max?: number } = {}) => <View><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} value={form[key]} onChangeText={value => update(key, value)} editable={!busy} style={[styles.input, options.multiline && styles.multiline]} multiline={options.multiline} keyboardType={options.numeric ? 'decimal-pad' : 'default'} autoCapitalize={options.url ? 'none' : 'sentences'} autoCorrect={!options.url} maxLength={options.max} /></View>;
   return <SafeAreaView style={ui.safe}><View style={ui.screen}><PageHeader title={id || savedId.current ? 'Edit service' : 'Add service'} onBack={onBack} disabled={busy} />
     {loading ? <Feedback title="Loading service" busy /> : loadError ? <Feedback title="Service unavailable" message={loadError} onRetry={load} /> : <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}><ScrollView contentContainerStyle={ui.content} keyboardShouldPersistTaps="handled">
-      <View style={ui.card}><Text style={ui.heading}>Service details</Text>{field('name', 'Service name', { max: 120 })}{field('description', 'Description', { multiline: true, max: 2000 })}{field('price', 'Price (LKR)', { numeric: true })}<Text style={styles.label}>Service image</Text><ServiceImage uri={selectedImage?.uri || form.imageUrl} name={form.name || 'Service image preview'} large /><Action title={selectedImage || form.imageUrl ? 'Replace service image' : 'Choose service image'} secondary icon="image-outline" disabled={busy} onPress={() => void choose()} />{selectedImage && <Action title="Cancel selected service image" secondary disabled={busy} onPress={() => setSelectedImage(null)} />}{field('imageUrl', 'Existing image URL (optional)', { url: true, max: 2048 })}</View>
+      <View style={ui.card}><Text style={ui.heading}>Service details</Text>{field('name', 'Service name', { max: 120 })}{field('description', 'Description', { multiline: true, max: 2000 })}{field('price', 'Price (LKR)', { numeric: true })}<Text style={styles.label}>Service image</Text><ServiceImage uri={selectedImage?.uri || form.imageUrl} name={form.name || 'Service image preview'} large /><Action title={selectedImage || form.imageUrl ? 'Replace service image' : 'Choose service image'} secondary icon="image-outline" disabled={busy} onPress={() => void choose()} />{selectedImage && <Action title="Cancel selection" secondary disabled={busy} onPress={() => setSelectedImage(null)} />}{field('imageUrl', 'Image URL (optional)', { url: true, max: 2048 })}</View>
       {!!error && <Text accessibilityRole="alert" style={ui.error}>{error}</Text>}{saving && <Text accessibilityLiveRegion="polite" style={ui.body}>{stage}{stage.startsWith('Uploading') ? `: ${Math.round(uploadProgress * 100)}%` : '...'}</Text>}<Action title="Save service" onPress={save} busy={saving} disabled={busy} /><Action title="Cancel" secondary onPress={onBack} disabled={busy} />
     </ScrollView></KeyboardAvoidingView>}
   </View></SafeAreaView>;
