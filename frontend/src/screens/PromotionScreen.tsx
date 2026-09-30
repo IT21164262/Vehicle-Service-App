@@ -19,7 +19,6 @@ export function PromotionScreen({ onBack, onLogout, onAddService }: Props) {
   return <SafeAreaView style={ui.safe}><View style={ui.screen}>
     <PageHeader title="Customer promotions" onBack={onBack} />
     <ScrollView contentContainerStyle={ui.content} refreshControl={<RefreshControl refreshing={services.loading} onRefresh={services.refresh} />}>
-      <Text style={ui.body}>Choose an existing service to add or edit its customer banner. Each service can have one promotion.</Text>
       {!!success && <Text accessibilityLiveRegion="polite" style={ui.body}>{success}</Text>}
       {services.loading && !services.value.length ? <Feedback title="Loading services" busy /> : services.error ? <Feedback title="Services unavailable" message={services.error} onRetry={services.refresh} /> : !services.value.length ? <View style={ui.card}><Text style={ui.heading}>No services yet</Text><Text style={ui.body}>Add a service first, then create its promotion here.</Text><Action title="Add Service" onPress={onAddService} /></View> : services.value.map(service => <View key={service.id} style={ui.card}>
         <Text style={ui.heading}>{service.name}</Text>
@@ -74,7 +73,7 @@ function PromotionForm({ service, onBack, onLogout, onSaved }: { service: Servic
     <PageHeader title="Edit promotion" onBack={onBack} disabled={busy} />
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}><ScrollView contentContainerStyle={ui.content} keyboardShouldPersistTaps="handled">
       <View style={ui.card}>
-        <Text style={ui.heading}>{service.name}</Text><Text style={ui.body}>This banner opens the selected service. Service details are managed separately.</Text>
+        <Text style={ui.heading}>{service.name}</Text>
         <View style={styles.toggle}><Text style={[styles.label, { flex: 1 }]}>Enable promotion</Text><Switch accessibilityLabel="Enable promotion" value={enabled} onValueChange={setEnabled} disabled={busy} trackColor={{ true: c.green }} /></View>
         <Text style={styles.label}>Promotion text</Text><TextInput accessibilityLabel="Promotion text" value={text} onChangeText={setText} maxLength={240} editable={!busy} multiline style={[styles.input, { minHeight: 100, textAlignVertical: 'top' }]} />
         <Text style={styles.label}>Display order</Text><TextInput accessibilityLabel="Display order" value={order} onChangeText={setOrder} editable={!busy} keyboardType="number-pad" style={styles.input} /><Text style={ui.body}>Lower numbers appear first.</Text>

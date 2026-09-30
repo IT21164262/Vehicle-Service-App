@@ -75,7 +75,7 @@ export function WelcomeScreen({ onLogin, onSignUp }: WelcomeScreenProps) {
               Reliable Auto Care{'\n'}Starts Here
             </Text>
             <Text style={styles.description}>
-              Book trusted car services and repairs{'\n'}anytime, anywhere.
+              Give your ride the care it deserves{'\n'}book your next service with AutoNexa
             </Text>
 
             <Pressable
@@ -119,7 +119,7 @@ export function WelcomeScreen({ onLogin, onSignUp }: WelcomeScreenProps) {
           <View style={styles.modalCard} accessibilityViewIsModal>
             <Text style={styles.modalTitle}>AutoNexa</Text>
             <Text style={styles.modalDescription}>
-              Book trusted car services and repairs anytime, anywhere.
+              AutoNexa makes vehicle care simple. Explore services, book appointments, and track updates{'\n'}all in one convenient app.
             </Text>
             <Pressable
               accessibilityRole="button"
