@@ -13,12 +13,18 @@ function localDateValue(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function dateFromAppointment(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return date;
+  return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12);
+}
+
 export function AppointmentFormScreen({ user, serviceId, appointment, onBack, onSaved, onLogout }: { user: AuthUser; serviceId: string; appointment?: Appointment; onBack: () => void; onSaved: () => void; onLogout: () => void }) {
   const [vehicleNumber, setVehicleNumber] = useState(appointment?.vehicleNumber || '');
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const initialDate = appointment ? new Date(appointment.appointmentDate) : today;
-  const [appointmentDate, setAppointmentDate] = useState<Date | null>(Number.isFinite(initialDate.getTime()) && initialDate >= today ? initialDate : null);
+  const initialDate = appointment ? dateFromAppointment(appointment.appointmentDate) : today;
+  const [appointmentDate, setAppointmentDate] = useState<Date | null>(Number.isFinite(initialDate.getTime()) ? initialDate : null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const androidPickerOpen = useRef(false);
@@ -72,7 +78,8 @@ export function AppointmentFormScreen({ user, serviceId, appointment, onBack, on
     if (!vehicleNumber.trim() || !appointmentDate) return setError('Vehicle number and appointment date are required.');
     if (!Number.isFinite(appointmentDate.getTime()) || appointmentDate < today) return setError('Choose today or a future date.');
     setSaving(true);
-    try { if (appointment) await updateAppointment(appointment.id, { vehicleNumber: vehicleNumber.trim(), appointmentDate: appointmentDate.toISOString() }); else await createAppointment({ userId: user.id, serviceId, vehicleNumber: vehicleNumber.trim(), appointmentDate: appointmentDate.toISOString() }); onSaved(); }
+    const selectedDate = localDateValue(appointmentDate);
+    try { if (appointment) await updateAppointment(appointment.id, { vehicleNumber: vehicleNumber.trim(), appointmentDate: selectedDate }); else await createAppointment({ userId: user.id, serviceId, vehicleNumber: vehicleNumber.trim(), appointmentDate: selectedDate }); onSaved(); }
     catch (failure) { setError(failure instanceof Error ? failure.message : 'Unable to create appointment.'); }
     finally { setSaving(false); }
   }

@@ -35,10 +35,27 @@ function validateInput(body, partial = false) {
     data.vehicleNumber = body.vehicleNumber.trim().toUpperCase();
   } else if (!partial) data.vehicleNumber = null;
   if (Object.hasOwn(body, 'appointmentDate')) {
-    const date = new Date(body.appointmentDate);
+    const dateOnly = typeof body.appointmentDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.appointmentDate);
+    let date;
+    if (dateOnly) {
+      const [year, month, day] = body.appointmentDate.split('-').map(Number);
+      date = new Date(Date.UTC(year, month - 1, day));
+      if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+        return { error: 'Appointment date must be valid.' };
+      }
+    } else {
+      date = new Date(body.appointmentDate);
+    }
     if (!Number.isFinite(date.getTime())) return { error: 'Appointment date must be valid.' };
-    if (dayStart(date) < dayStart(new Date())) return { error: 'Appointment date cannot be in the past.' };
-    data.appointmentDate = dayStart(date);
+    const today = new Date();
+    if (dateOnly) {
+      const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+      if (date < todayUtc) return { error: 'Appointment date cannot be in the past.' };
+      data.appointmentDate = date;
+    } else {
+      if (dayStart(date) < dayStart(today)) return { error: 'Appointment date cannot be in the past.' };
+      data.appointmentDate = dayStart(date);
+    }
   } else if (!partial) data.appointmentDate = null;
   if (Object.hasOwn(body, 'status')) {
     if (!appointmentStatuses.includes(body.status)) return { error: 'Invalid appointment status.' };
