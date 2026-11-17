@@ -10,8 +10,7 @@ const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
-    // Optional workaround for local networks that cannot resolve Atlas SRV records.
-    // Render must continue using its platform DNS, even if local settings are copied.
+    
     if (process.env.RENDER !== 'true' && process.env.DNS_SERVERS?.trim()) {
       require('node:dns').setServers(process.env.DNS_SERVERS.split(',').map(value => value.trim()).filter(Boolean));
     }
@@ -24,7 +23,7 @@ async function startServer() {
     await mongoose.connect(process.env.MONGODB_URI, {
       dbName: "vehicle_service_db",
     });
-    // unique: true declares an index; wait for it before accepting registrations.
+    
     await User.init();
 
     console.log("MongoDB connected successfully");

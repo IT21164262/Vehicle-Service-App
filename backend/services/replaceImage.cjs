@@ -9,12 +9,10 @@ async function replaceImage(Model, id, urlField, prefix, category, buffer) {
   const previous = await Model.findById(id).select(`${urlField} ${publicField} ${assetField} isDeleted`);
   if (!previous || previous.isDeleted) throw new ImageError(404, 'Record not found.');
   const uploaded = await images.upload(buffer, category);
-  // Compare-and-set protects overlapping replacements from deleting the winner's image.
-  // Legacy records may lack the metadata fields entirely.
+
   const match = { _id: id, [urlField]: previous[urlField] || { $in: ['', null] }, [publicField]: previous[publicField] || null };
   if (Model.schema.path('isDeleted')) match.isDeleted = { $ne: true };
-  // If MongoDB throws, the write outcome can be uncertain. Retain both assets for
-  // reconciliation rather than risk deleting an image that was actually committed.
+
   const saved = await Model.findOneAndUpdate(match, { $set: {
     [urlField]: uploaded.url, [publicField]: uploaded.publicId, [assetField]: uploaded.assetId,
   } }, { returnDocument: 'after', runValidators: true });

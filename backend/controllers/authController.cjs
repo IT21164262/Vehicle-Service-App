@@ -40,7 +40,7 @@ async function register(req, res) {
     Buffer.byteLength(password, "utf8") > 72
   ) {
     return res.status(400).json({
-      message: "Password must have at least 8 characters and at most 72 bytes.",
+      message: "Password must have at least 8 characters.",
     });
   }
 
@@ -105,7 +105,7 @@ async function login(req, res) {
     return res.status(400).json({ message: "Enter a valid email address." });
   }
 
-  if (password.length < 8 || Buffer.byteLength(password, "utf8") > 72) {
+  if (password.length < 8) {
     return res.status(400).json({
       message: "Password must have at least 8 characters and at most 72 bytes.",
     });
